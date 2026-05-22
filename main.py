@@ -9,6 +9,7 @@ Module-level initialization runs once on import so the tools are immediately
 usable when Claude Code loads this file.
 """
 
+import sys
 from collections import Counter
 
 from src.google_drive_auth import GoogleDriveAuth
@@ -19,9 +20,15 @@ from src.para_analyzer import extract_para_signals, format_proposal_report
 # Module-level initialization — runs once when main.py is imported
 # ---------------------------------------------------------------------------
 
-_auth = GoogleDriveAuth()
-_service = _auth.authenticate()
-_organizer = GoogleDriveOrganizer(_service)
+try:
+    _auth = GoogleDriveAuth()
+    _service = _auth.authenticate()
+    _organizer = GoogleDriveOrganizer(_service)
+except FileNotFoundError as exc:
+    raise RuntimeError(
+        f"Google Drive PARA Organizer failed to initialize: {exc}\n"
+        "Fix the credentials issue above, then re-run."
+    ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +79,7 @@ def get_drive_analysis(recursive: bool = True, folder_id: str = "root") -> dict:
     for f in enriched:
         f["folder_path"] = _organizer.get_folder_path(f)
 
-    # Add PARA signals (mutates in place)
+    # Add PARA signals (returns None; mutates each file dict in place)
     extract_para_signals(enriched)
 
     # Build files_index for use with preview_para_plan
@@ -118,7 +125,8 @@ def execute_para_organization(plan: dict) -> dict:
     ONLY call this after the user has reviewed and approved the plan from preview_para_plan().
 
     Args:
-        plan: same format as preview_para_plan's plan argument
+        plan: dict mapping PARA categories to subfolders to file IDs, e.g.:
+              {"Projects": {"Website": ["id1", "id2"]}, "Areas": {...}, ...}
 
     Returns:
         {"folders_created": int, "files_moved": int, "errors": list[str]}
@@ -128,29 +136,42 @@ def execute_para_organization(plan: dict) -> dict:
     errors = []
 
     # Create PARA root folder (or use existing)
-    para_root_id = _organizer.create_folder("PARA", "root")
+    try:
+        para_root_id = _organizer.create_folder("PARA", "root")
+    except Exception as exc:
+        return {"folders_created": 0, "files_moved": 0, "errors": [f"Failed to create PARA root folder: {exc}"]}
 
     for category, subfolders in plan.items():
-        category_id = _organizer.create_folder(category, para_root_id)
-        folders_created += 1
+        try:
+            category_id = _organizer.create_folder(category, para_root_id)
+            folders_created += 1
+        except Exception as exc:
+            errors.append(f"Failed to create category folder '{category}': {exc}")
+            continue
 
         for subfolder_name, file_ids in subfolders.items():
-            subfolder_id = _organizer.create_folder(subfolder_name, category_id)
-            folders_created += 1
+            try:
+                subfolder_id = _organizer.create_folder(subfolder_name, category_id)
+                folders_created += 1
+            except Exception as exc:
+                errors.append(f"Failed to create subfolder '{category}/{subfolder_name}': {exc}")
+                continue
 
             for file_id in file_ids:
+                file_name = file_id
                 try:
                     file_meta = _service.files().get(
-                        fileId=file_id, fields="parents"
+                        fileId=file_id, fields="name,parents"
                     ).execute()
+                    file_name = file_meta.get("name", file_id)
                     old_parent = file_meta.get("parents", ["root"])[0]
                     success = _organizer.move_file(file_id, subfolder_id, old_parent)
                     if success:
                         files_moved += 1
                     else:
-                        errors.append(f"Failed to move file {file_id}")
+                        errors.append(f"Failed to move '{file_name}' ({file_id})")
                 except Exception as exc:
-                    errors.append(f"Error processing file {file_id}: {exc}")
+                    errors.append(f"Error processing '{file_name}' ({file_id}): {exc}")
 
     return {
         "folders_created": folders_created,
@@ -164,8 +185,6 @@ def execute_para_organization(plan: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         files = _organizer.get_all_files_recursive(folder_id="root", max_depth=1)
         print(f"Connection OK — found {len(files)} files at root level")
