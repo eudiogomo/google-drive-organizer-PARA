@@ -18,6 +18,7 @@ class GoogleDriveOrganizer:
 
     def __init__(self, service: Any):
         self.service = service  # authenticated Drive API service
+        self._folders_cache: dict = {}  # folder_id -> {"name": str, "parent_id": str | None}
 
     # ------------------------------------------------------------------
     # 1. Recursive file listing
@@ -28,9 +29,16 @@ class GoogleDriveOrganizer:
         folder_id: str = "root",
         max_depth: int = 10,
     ) -> list[dict]:
-        """Recursively lists all non-folder files owned by the user."""
+        """Recursively lists all non-folder files owned by the user.
+
+        Also populates ``self._folders_cache`` with the full folder tree so that
+        ``get_folder_path`` can reconstruct multi-level paths without extra API
+        calls.
+        """
         all_files: list[dict] = []
         visited_folders: set[str] = set()
+        # Seed the cache with the root sentinel so paths don't start with "root/"
+        self._folders_cache = {"root": {"name": "", "parent_id": None}}
         self._recurse_folder(folder_id, max_depth, 0, visited_folders, all_files)
         return all_files
 
@@ -65,6 +73,13 @@ class GoogleDriveOrganizer:
 
             for item in items:
                 if item.get("mimeType") == self.FOLDER_MIME:
+                    # Record this folder in the cache before recursing so that
+                    # get_folder_path can walk the full ancestor chain later.
+                    item_parents = item.get("parents") or []
+                    self._folders_cache[item["id"]] = {
+                        "name": item["name"],
+                        "parent_id": item_parents[0] if item_parents else None,
+                    }
                     # Recurse into sub-folders
                     self._recurse_folder(
                         item["id"],
@@ -174,39 +189,37 @@ class GoogleDriveOrganizer:
     # 3. Folder path resolution
     # ------------------------------------------------------------------
 
-    def get_folder_path(self, file: dict, folders_cache: dict) -> str:
-        """Returns a human-readable path string like 'Projects/MySubfolder'.
+    def get_folder_path(self, file: dict) -> str:
+        """Returns a human-readable path string like 'Projects/Website-Launch'.
+
+        Walks ``self._folders_cache`` upward from the file's immediate parent
+        until the root sentinel (folder_id ``"root"`` with name ``""``) or an
+        unknown ancestor is reached.  The root sentinel's empty name is excluded
+        from the result so paths never start with a spurious ``"root/"`` prefix.
 
         Args:
             file: A raw or enriched Drive API file dict.
-            folders_cache: Mapping of folder_id -> folder_name.
 
         Returns:
-            Path string, or "" if parents are not in cache.
+            Path string (e.g. ``"Projects/Website-Launch"``), or ``""`` if the
+            file has no parents or its parent chain is not in the cache.
         """
         parents: list[str] = file.get("parents") or []
         if not parents:
             return ""
 
-        parent_id = parents[0]
-        path_parts: list[str] = []
+        parts: list[str] = []
+        current_id: str | None = parents[0]
 
-        while parent_id and parent_id in folders_cache:
-            folder_name = folders_cache[parent_id]
-            path_parts.append(folder_name)
-            # Try to look up the parent's parent via a secondary lookup.
-            # folders_cache values are names; we need a way to navigate upward.
-            # Since the cache maps id->name only, we stop here unless the caller
-            # has embedded parent info. We build upward only one level here;
-            # callers who need full paths should pass a richer cache or call
-            # this helper after populating a full parent-chain cache.
-            break
+        while current_id and current_id in self._folders_cache:
+            entry = self._folders_cache[current_id]
+            name: str = entry["name"]
+            if name:  # skip the root sentinel's empty name
+                parts.append(name)
+            current_id = entry.get("parent_id")
 
-        if not path_parts:
-            return ""
-
-        path_parts.reverse()
-        return "/".join(path_parts)
+        parts.reverse()
+        return "/".join(parts) if parts else ""
 
     # ------------------------------------------------------------------
     # 4. Create a single folder (idempotent)
