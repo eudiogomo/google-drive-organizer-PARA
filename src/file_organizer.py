@@ -2,6 +2,8 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
+from googleapiclient.errors import HttpError
+
 
 class GoogleDriveOrganizer:
     FOLDER_MIME = "application/vnd.google-apps.folder"
@@ -18,7 +20,7 @@ class GoogleDriveOrganizer:
 
     def __init__(self, service: Any):
         self.service = service  # authenticated Drive API service
-        self._folders_cache: dict = {}  # folder_id -> {"name": str, "parent_id": str | None}
+        self._folders_cache: dict[str, dict[str, str | None]] = {}  # folder_id -> {"name": str, "parent_id": str | None}
 
     # ------------------------------------------------------------------
     # 1. Recursive file listing
@@ -68,7 +70,11 @@ class GoogleDriveOrganizer:
             if page_token:
                 kwargs["pageToken"] = page_token
 
-            response = self.service.files().list(**kwargs).execute()
+            try:
+                response = self.service.files().list(**kwargs).execute()
+            except HttpError as exc:
+                print(f"[warn] Drive API error scanning folder {folder_id}: {exc}", flush=True)
+                break
             items: list[dict] = response.get("files", [])
 
             for item in items:
@@ -124,16 +130,19 @@ class GoogleDriveOrganizer:
         # -- file_age_days & days_since_modified --
         now = datetime.now(tz=timezone.utc)
         enriched["file_age_days"] = self._days_since(file.get("createdTime"), now)
-        days_since_modified = self._days_since(file.get("modifiedTime"), now)
-        enriched["days_since_modified"] = days_since_modified
-
-        # -- activity_level --
-        if days_since_modified < 90:
-            activity_level = "active"
-        elif days_since_modified < 365:
-            activity_level = "moderate"
+        modified_time_raw = file.get("modifiedTime")
+        if not modified_time_raw:
+            days_since_modified = -1
+            activity_level = "unknown"
         else:
-            activity_level = "inactive"
+            days_since_modified = self._days_since(modified_time_raw, now)
+            if days_since_modified < 90:
+                activity_level = "active"
+            elif days_since_modified < 365:
+                activity_level = "moderate"
+            else:
+                activity_level = "inactive"
+        enriched["days_since_modified"] = days_since_modified
         enriched["activity_level"] = activity_level
 
         # -- is_google_workspace --
@@ -197,6 +206,11 @@ class GoogleDriveOrganizer:
         unknown ancestor is reached.  The root sentinel's empty name is excluded
         from the result so paths never start with a spurious ``"root/"`` prefix.
 
+        Note:
+            ``get_all_files_recursive`` must be called before this method to
+            populate ``self._folders_cache``; otherwise the folder ancestor chain
+            will be empty and this method will return ``""``.
+
         Args:
             file: A raw or enriched Drive API file dict.
 
@@ -228,6 +242,8 @@ class GoogleDriveOrganizer:
     def create_folder(self, name: str, parent_id: str) -> str:
         """Creates a Drive folder; returns existing folder ID if one already exists."""
         safe_name = self._sanitize_folder_name(name)
+        if not safe_name:
+            raise ValueError(f"Folder name '{name}' results in an empty string after sanitization.")
 
         # Check for existing folder with same name under parent
         query = (
@@ -259,7 +275,7 @@ class GoogleDriveOrganizer:
     @staticmethod
     def _sanitize_folder_name(name: str) -> str:
         """Remove invalid characters and truncate to 100 chars."""
-        sanitized = re.sub(r'[<>:"/\\|?*]', "", name)
+        sanitized = re.sub(r'[<>:"/\\|?*]', "", name).strip()
         return sanitized[:100]
 
     # ------------------------------------------------------------------
@@ -272,6 +288,8 @@ class GoogleDriveOrganizer:
         Example: create_folder_hierarchy(["Projects", "Website-Launch"], root_id)
         Returns the ID of the deepest (last) folder created.
         """
+        if not path_parts:
+            raise ValueError("path_parts must not be empty.")
         current_parent = root_id
         for part in path_parts:
             current_parent = self.create_folder(part, current_parent)
@@ -294,5 +312,6 @@ class GoogleDriveOrganizer:
                 fields="id, parents",
             ).execute()
             return True
-        except Exception:
+        except Exception as exc:
+            print(f"[warn] move_file failed for {file_id}: {exc}", flush=True)
             return False
