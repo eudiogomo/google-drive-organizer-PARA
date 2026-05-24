@@ -14,7 +14,7 @@ from collections import Counter
 
 from src.google_drive_auth import GoogleDriveAuth
 from src.file_organizer import GoogleDriveOrganizer
-from src.para_analyzer import extract_para_signals, format_proposal_report
+from src.para_analyzer import extract_para_signals, apply_cluster_hints, format_proposal_report
 
 # ---------------------------------------------------------------------------
 # Module-level initialization — runs once when main.py is imported
@@ -43,12 +43,22 @@ def _build_stats(enriched_files: list[dict]) -> dict:
         f.get("para_signals", {}).get("suggested_category", "Resources")
         for f in enriched_files
     )
+    confidence_counts = Counter(
+        f.get("para_signals", {}).get("confidence", "low")
+        for f in enriched_files
+    )
+    anti_hoarding_count = sum(
+        1 for f in enriched_files
+        if f.get("para_signals", {}).get("anti_hoarding_flag", False)
+    )
 
     return {
         "total_files": len(enriched_files),
         "by_activity": dict(activity_counts),
         "by_type": dict(mime_counts),
         "suggested_para_distribution": dict(suggested_counts),
+        "by_confidence": dict(confidence_counts),
+        "anti_hoarding_candidates": anti_hoarding_count,
     }
 
 
@@ -81,6 +91,9 @@ def get_drive_analysis(recursive: bool = True, folder_id: str = "root") -> dict:
 
     # Add PARA signals (returns None; mutates each file dict in place)
     extract_para_signals(enriched)
+
+    # Post-processing: low-confidence files inherit their folder's majority category
+    apply_cluster_hints(enriched)
 
     # Build files_index for use with preview_para_plan
     files_index = {f["id"]: f for f in enriched}

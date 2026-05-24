@@ -127,18 +127,48 @@ PARA is a four-category system for organizing digital information. Each category
 
 ---
 
-## 4. Classification Tie-breaking Rules
+## 4. Classification Signals and Tie-breaking Rules
 
-When a file could fit multiple categories, apply these rules in order (first match wins):
+Each file has a `para_signals` dict with these fields:
 
-1. `activity_level == "inactive"` (not modified in >1 year) → **Archives** *(strongest signal)*
-2. `activity_level == "active"` (modified in <90 days) + file type is document / spreadsheet / presentation → **Projects**
-3. `activity_level == "active"` + any other file type → **Areas**
-4. `activity_level == "moderate"` (90–364 days) + file type is document / spreadsheet / presentation / PDF / form → **Resources**
-5. `activity_level == "moderate"` + any other file type → **Areas**
-6. `activity_level == "unknown"` → **Resources** *(safe neutral category)*
-7. **Projects vs. Areas:** Does the file have a clear end? If yes → **Projects**. If ongoing → **Areas**.
-8. **Resources vs. Archives:** Was it recently relevant? If maybe → **Resources**. If clearly outdated → **Archives**.
+| Field | Type | Description |
+|---|---|---|
+| `suggested_category` | string | The recommended PARA category after all signals are applied |
+| `confidence` | `"high"` / `"medium"` / `"low"` | How certain the classification is |
+| `signals_fired` | list of strings | Which signals contributed (e.g. `"activity:inactive"`, `"name_token:old"`, `"folder:Archives"`) |
+| `anti_hoarding_flag` | bool | True when the file is a large, inactive binary — a strong delete/archive candidate |
+| `age_category` | string | `recent` / `moderate` / `old` / `very_old` |
+
+### Signal priority (the classifier applies these in order)
+
+1. **`activity_level == "inactive"`** (not modified in >1 year) → **Archives** *(always wins — overrides all other signals)*
+2. **Filename tokens** — file contains words like `old`, `backup`, `template`, `draft`, `budget`, etc. → category based on the token group (see table below)
+3. **Folder context** — file lives inside a folder whose name matches a PARA category or domain keyword → inherit that category
+4. **Activity + type fallback:**
+   - `active` + document/spreadsheet/presentation → **Projects**
+   - `active` + any other type → **Areas**
+   - `moderate` + document/spreadsheet/presentation/PDF/form → **Resources**
+   - `moderate` + any other type → **Areas**
+   - `unknown` → **Resources**
+
+### Filename token groups
+
+| Token group | Examples | Category |
+|---|---|---|
+| Archive | `old`, `backup`, `deprecated`, `legacy`, `done`, `finished`, `retired`, year ≤ 2 years ago | Archives |
+| Project | `draft`, `wip`, `proposal`, `launch`, `campaign`, `sprint`, `milestone` | Projects |
+| Area | `health`, `finance`, `family`, `career`, `habit`, `journal` | Areas |
+| Resource | `template`, `reference`, `guide`, `notes`, `checklist`, `tutorial`, `recipe`, `course` | Resources |
+
+### How to use `confidence` when building the plan
+
+- **`confidence == "high"`** — treat as settled; include in plan directly without review
+- **`confidence == "medium"`** — review only if the assignment looks surprising
+- **`confidence == "low"`** — surface these to the user; ask for guidance when ambiguous
+
+### Anti-hoarding candidates
+
+Files where `anti_hoarding_flag == True` are large inactive binaries (images, videos, audio over 10 MB not modified in over a year). The preview report shows these in a dedicated section. When presenting the plan, highlight these and suggest the user consider deleting them rather than just archiving.
 
 ---
 
@@ -173,12 +203,18 @@ Step 2 — Plan
   }
 
   Rules for building the plan:
-  - Use para_signals.suggested_category as a STARTING POINT, not the final answer.
-  - Apply the tie-breaking rules in Section 4 to refine assignments.
-  - Group related files into the same subcategory.
+  - Use para_signals.suggested_category as the primary assignment for each file.
+  - For high-confidence files, accept the suggested_category directly.
+  - For low-confidence files, apply the tie-breaking rules in Section 4 and use
+    para_signals.signals_fired to understand why the classifier chose what it chose.
+  - Group related files into the same subcategory; use folder_path as a clustering hint.
   - Name subcategories in English using PascalCase or Kebab-Case.
   - Every file must appear in exactly one subcategory.
   - Subcategory names must be filesystem-safe (no special characters).
+  - Check stats.by_confidence from Step 1 — report how many files are high/medium/low
+    confidence before presenting the plan.
+  - Highlight anti_hoarding_flag == True files: mention them to the user as candidates
+    for deletion (they will still be moved to Archives in the plan).
 
 Step 3 — Preview
   Call preview_para_plan(plan, files_index) with the plan dict and
