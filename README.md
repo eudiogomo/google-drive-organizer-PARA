@@ -54,7 +54,7 @@ P.A.R.A. is an organizational system created by Tiago Forte that divides everyth
 ### 1. Clone the project
 
 ```bash
-git clone https://github.com/your-username/google-drive-organizer-PARA.git
+git clone https://github.com/eudiogomo/google-drive-organizer-PARA.git
 cd google-drive-organizer-PARA
 pip install -r requirements.txt
 ```
