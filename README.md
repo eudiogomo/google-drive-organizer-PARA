@@ -1,23 +1,23 @@
-# 🗂️ Google Drive Organizer — Método P.A.R.A. com Claude Code
+# 🗂️ Google Drive Organizer — P.A.R.A. Method with Claude Code
 
-Um sistema que usa a inteligência do Claude Code para organizar automaticamente seus arquivos do Google Drive seguindo o **método P.A.R.A.** de Tiago Forte. Diferente dos organizadores tradicionais, este propõe um plano completo para sua aprovação antes de mover qualquer arquivo.
+A system that uses Claude Code's intelligence to automatically organize your Google Drive files following **Tiago Forte's P.A.R.A. method**. Unlike traditional organizers, it proposes a complete plan for your approval before moving any file.
 
-> Adaptado de [tharlesamaro/google-drive-organizer](https://github.com/tharlesamaro/google-drive-organizer)
+> Adapted from [tharlesamaro/google-drive-organizer](https://github.com/tharlesamaro/google-drive-organizer)
 
 ---
 
-## 🎯 O que é o método P.A.R.A.?
+## 🎯 What is the P.A.R.A. Method?
 
-O P.A.R.A. é um sistema de organização criado por Tiago Forte que divide tudo em quatro categorias:
+P.A.R.A. is an organizational system created by Tiago Forte that divides everything into four categories:
 
-| Categoria | O que é | Sinais |
-|-----------|---------|--------|
-| **Projects** | Trabalhos com resultado específico e prazo | Modificado nos últimos 90 dias, ligado a uma entrega |
-| **Areas** | Responsabilidades contínuas sem fim definido | Editado regularmente, domínios da vida (saúde, finanças...) |
-| **Resources** | Material de referência e consulta | Pouco editado, serve como consulta futura |
-| **Archives** | Itens inativos das outras categorias | Não modificado há mais de 1 ano |
+| Category | What it is | Signals |
+|----------|-----------|---------|
+| **Projects** | Work with a specific outcome and deadline | Modified in the last 90 days, tied to a deliverable |
+| **Areas** | Ongoing responsibilities with no defined end | Regularly edited, life domains (health, finances…) |
+| **Resources** | Reference and consultation material | Rarely edited, serves as future reference |
+| **Archives** | Inactive items from the other categories | Not modified in over 1 year |
 
-### 📁 Como fica a estrutura no Drive
+### 📁 How the structure looks in Drive
 
 ```
 📁 PARA/
@@ -40,171 +40,171 @@ O P.A.R.A. é um sistema de organização criado por Tiago Forte que divide tudo
 
 ---
 
-## ✨ Diferenciais deste projeto
+## ✨ What makes this project different
 
-- 🧠 **Análise inteligente**: Claude Code analisa metadados e padrões de uso dos arquivos
-- 👁️ **Revisão antes de executar**: Claude propõe o plano completo e só executa após sua aprovação
-- 🏗️ **Estrutura P.A.R.A.**: Organização baseada em metodologia comprovada de produtividade
-- 🛡️ **100% seguro**: Apenas move arquivos, nunca deleta
+- 🧠 **Intelligent analysis**: Claude Code analyzes file metadata and usage patterns
+- 👁️ **Review before execution**: Claude proposes the full plan and only executes after your approval
+- 🏗️ **P.A.R.A. structure**: Organization based on a proven productivity methodology
+- 🛡️ **100% safe**: Only moves files, never deletes
 
 ---
 
-## ⚡ Como começar
+## ⚡ Getting Started
 
-### 1. Clone o projeto
+### 1. Clone the project
 
 ```bash
-git clone https://github.com/seu-usuario/google-drive-organizer-PARA.git
+git clone https://github.com/your-username/google-drive-organizer-PARA.git
 cd google-drive-organizer-PARA
 pip install -r requirements.txt
 ```
 
-### 2. Configure as credenciais do Google Drive
+### 2. Configure Google Drive credentials
 
-1. Acesse o [Google Cloud Console](https://console.cloud.google.com/)
-2. Crie um novo projeto (ou use um existente)
-3. Ative a **Google Drive API**
-4. Crie credenciais **OAuth 2.0** para aplicação desktop
-5. Em **Test users**, adicione o e-mail da sua conta Google
-6. Baixe o JSON e renomeie para `credentials.json`
-7. Coloque o arquivo na pasta raiz do projeto
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or use an existing one)
+3. Enable the **Google Drive API**
+4. Create **OAuth 2.0** credentials for a Desktop application
+5. Under **Test users**, add your Google account email
+6. Download the JSON and rename it to `credentials.json`
+7. Place the file in the project root folder
 
-### 3. Teste a conexão
+### 3. Test the connection
 
 ```bash
 python main.py test
 ```
 
-Se aparecer `Connection OK — found N files at root level`, está tudo certo.
+If you see `Connection OK — found N files at root level`, everything is working.
 
-### 4. Execute
+### 4. Run
 
 ```bash
 python main.py
 ```
 
-Depois, no **Claude Code** (no mesmo diretório), peça:
+Then, in **Claude Code** (in the same directory), ask:
 
 ```
-Organize meu Google Drive usando o método P.A.R.A.
+Organize my Google Drive using the P.A.R.A. method.
 ```
 
 ---
 
-## 🔄 Como funciona o fluxo
+## 🔄 How the workflow works
 
 ```
-1. ANALYZE   → Claude varre o Drive inteiro e analisa os arquivos
+1. ANALYZE   → Claude scans the entire Drive and analyzes the files
         ↓
-2. PLAN      → Claude cria um plano P.A.R.A. com base nos sinais de cada arquivo
+2. PLAN      → Claude creates a P.A.R.A. plan based on each file's signals
         ↓
-3. PREVIEW   → Claude exibe o plano completo para sua revisão:
-               📁 Projects/ (12 arquivos)
-                  └─ Website-Redesign (8 arquivos)
-                  └─ Q4-Report (4 arquivos)
-               📁 Areas/ (5 arquivos)
-                  └─ Finance (5 arquivos)
+3. PREVIEW   → Claude displays the full plan for your review:
+               📁 Projects/ (12 files)
+                  └─ Website-Redesign (8 files)
+                  └─ Q4-Report (4 files)
+               📁 Areas/ (5 files)
+                  └─ Finance (5 files)
                ...
         ↓
-4. APPROVE   → Você aprova (ou pede ajustes)
+4. APPROVE   → You approve (or request adjustments)
         ↓
-5. EXECUTE   → Claude move todos os arquivos para a estrutura P.A.R.A.
+5. EXECUTE   → Claude moves all files into the P.A.R.A. structure
 ```
 
-> **Importante:** O Claude nunca executa sem sua aprovação explícita no passo 4.
+> **Important:** Claude never executes without your explicit approval in step 4.
 
 ---
 
-## 🎮 Comandos úteis no Claude Code
+## 🎮 Useful Claude Code prompts
 
 ```
-# Organização completa
-Organize meu Google Drive usando o método P.A.R.A.
+# Full organization
+Organize my Google Drive using the P.A.R.A. method.
 
-# Só analisar sem organizar ainda
-Analise meu Drive e me mostre a distribuição dos arquivos por categoria P.A.R.A.
+# Analyze only, without organizing yet
+Analyze my Drive and show me the file distribution by P.A.R.A. category.
 
-# Testar com uma pasta específica
-Analise apenas a pasta "Documentos" e proponha uma organização P.A.R.A.
+# Test with a specific folder
+Analyze only the "Documents" folder and suggest a P.A.R.A. organization.
 
-# Ajustar o plano
-Mova todos os arquivos de "Finance" para Projects em vez de Areas
+# Adjust the plan
+Move all files from "Finance" to Projects instead of Areas.
 ```
 
 ---
 
-## 🔧 Funcionalidades técnicas
+## 🔧 Technical details
 
-### Ferramentas expostas ao Claude Code
+### Tools exposed to Claude Code
 
 ```python
-# Varre o Drive e retorna arquivos com sinais P.A.R.A.
+# Scans the Drive and returns files with P.A.R.A. signals
 data = get_drive_analysis(recursive=True, folder_id="root")
-# Retorna: {"files": [...], "stats": {...}, "files_index": {...}}
+# Returns: {"files": [...], "stats": {...}, "files_index": {...}}
 
-# Formata o plano proposto para revisão
+# Formats the proposed plan for review
 report = preview_para_plan(plan, files_index)
 
-# Executa o plano aprovado
+# Executes the approved plan
 result = execute_para_organization(plan)
-# Retorna: {"folders_created": N, "files_moved": N, "errors": [...]}
+# Returns: {"folders_created": N, "files_moved": N, "errors": [...]}
 ```
 
-### Sinais P.A.R.A. calculados por arquivo
+### P.A.R.A. signals calculated per file
 
-| Sinal | Descrição |
-|-------|-----------|
-| `days_since_modified` | Dias desde a última edição |
+| Signal | Description |
+|--------|-------------|
+| `days_since_modified` | Days since last edit |
 | `activity_level` | `active` / `moderate` / `inactive` |
-| `mime_type_category` | Document / Spreadsheet / PDF / Image / ... |
-| `file_age_days` | Idade total do arquivo |
-| `name_keywords` | Palavras-chave extraídas do nome |
-| `suggested_category` | Sugestão automática de categoria P.A.R.A. |
+| `mime_type_category` | Document / Spreadsheet / PDF / Image / … |
+| `file_age_days` | Total age of the file |
+| `name_keywords` | Keywords extracted from the filename |
+| `suggested_category` | Automatic P.A.R.A. category suggestion |
 
 ---
 
-## 🛡️ Segurança e privacidade
+## 🛡️ Security & Privacy
 
-- 🔒 **Credenciais locais**: `credentials.json` e `token.json` ficam apenas no seu computador
-- 🏠 **Dados no Google**: Arquivos permanecem na sua conta Google Drive
-- 🚫 **Zero deleção**: O sistema apenas move arquivos
-- 👁️ **Revisão obrigatória**: Você aprova antes de qualquer alteração
-- ↩️ **Reversível**: Mudanças podem ser desfeitas manualmente no Google Drive
-
----
-
-## 🔧 Problemas comuns e soluções
-
-### Erro 403: "The user does not have sufficient permissions"
-
-1. No [Google Cloud Console](https://console.cloud.google.com/), vá em **APIs & Services > Credentials**
-2. Edite suas credenciais OAuth 2.0
-3. Em **Test users**, adicione o e-mail da sua conta Google
-4. Salve as alterações
-5. Delete o arquivo `token.json` (se existir)
-6. Execute `python main.py test` novamente e refaça a autorização
-
-### "credentials.json não encontrado"
-
-- Verifique se o arquivo está na pasta raiz do projeto (não em subpastas)
-- O nome deve ser exatamente `credentials.json`
-
-### Claude Code não consegue chamar as funções
-
-- Verifique se `python main.py` ainda está rodando no terminal
-- Teste com `python main.py test` antes de usar o Claude Code
-
-### Erro de autenticação após longo tempo sem usar
-
-- Delete o arquivo `token.json`
-- Execute `python main.py` novamente para refazer a autenticação
+- 🔒 **Local credentials**: `credentials.json` and `token.json` stay only on your computer
+- 🏠 **Data in Google**: Files remain in your Google Drive account
+- 🚫 **Zero deletion**: The system only moves files
+- 👁️ **Mandatory review**: You approve before any changes are made
+- ↩️ **Reversible**: Changes can be manually undone in Google Drive
 
 ---
 
-## 📚 Sobre o método P.A.R.A.
+## 🔧 Troubleshooting
 
-O P.A.R.A. foi criado por Tiago Forte e é descrito em detalhes no livro [*Building a Second Brain*](https://www.buildingasecondbrain.com/). A ideia central é que qualquer informação pode ser classificada em apenas quatro categorias, tornando a organização simples e consistente ao longo do tempo.
+### Error 403: "The user does not have sufficient permissions"
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), go to **APIs & Services > Credentials**
+2. Edit your OAuth 2.0 credentials
+3. Under **Test users**, add your Google account email
+4. Save the changes
+5. Delete the `token.json` file (if it exists)
+6. Run `python main.py test` again and complete the authorization
+
+### "credentials.json not found"
+
+- Make sure the file is in the project root folder (not in subfolders)
+- The filename must be exactly `credentials.json`
+
+### Claude Code cannot call the functions
+
+- Check that `python main.py` is still running in the terminal
+- Test with `python main.py test` before using Claude Code
+
+### Authentication error after a long period of inactivity
+
+- Delete the `token.json` file
+- Run `python main.py` again to re-authenticate
 
 ---
 
-**💡 O diferencial:** Este projeto não apenas organiza — ele organiza seguindo um método comprovado, propõe o plano para você revisar, e só executa com sua aprovação.
+## 📚 About the P.A.R.A. Method
+
+P.A.R.A. was created by Tiago Forte and is described in detail in the book [*Building a Second Brain*](https://www.buildingasecondbrain.com/). The core idea is that any piece of information can be classified into just four categories, making organization simple and consistent over time.
+
+---
+
+**💡 The differentiator:** This project doesn't just organize — it organizes following a proven method, proposes the plan for you to review, and only executes with your approval.
