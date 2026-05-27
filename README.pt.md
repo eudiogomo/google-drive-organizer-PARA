@@ -56,6 +56,8 @@ O P.A.R.A. é um sistema de organização criado por Tiago Forte que divide tudo
 ```bash
 git clone https://github.com/eudiogomo/google-drive-organizer-PARA.git
 cd google-drive-organizer-PARA
+python -m venv .venv
+source .venv/bin/activate  # no Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
